@@ -6,7 +6,39 @@ pragma solidity >=0.6.0 <0.9.0;
 //     require(IERC721(_tokenAddress).supportsInterface(_INTERFACE_ID_ERC721),"The NFT contract has an invalid ERC721 implementation");
 //     return IERC721(_tokenAddress);
 // }
+interface IERC721Receiver {
+    /**
+     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
+     * by `operator` from `from`, this function is called.
+     *
+     * It must return its Solidity selector to confirm the token transfer.
+     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
+     *
+     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
+     */
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
 
+contract ERC721Holder is IERC721Receiver {
+    /**
+     * @dev See {IERC721Receiver-onERC721Received}.
+     *
+     * Always returns `IERC721Receiver.onERC721Received.selector`.
+     */
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+}
 library Address {
 
     function isContract(address account) internal view returns (bool) {
@@ -340,7 +372,7 @@ interface IERC721 is IERC165 {
     ) external;
 }
 
-contract NFTMarketplace is Pausable  {
+contract NFTMarketplace is Pausable, ERC721Holder  {
     using Address for address;
     bytes4 public constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
 
@@ -734,17 +766,15 @@ contract NFTMarketplace is Pausable  {
  //...........................................................................................................................................................................    
     
     //Make Offer by $AURA & $WETH
-    function makeOfferAURA(uint256 _amount,uint256 _tokenID,uint256 _time,address _seller) public {
-        require(nftToken.balanceOf(_seller)==_tokenID,"The Token ID doesn't exist");
-
+    function makeOfferAURA(uint256 _amount,uint256 _tokenID,uint256 _time) public 
+    {
         offerByBuyerAURA[_tokenID].amount.push(_amount); 
         offerByBuyerAURA[_tokenID].expiry.push(_time);
         offerByBuyerAURA[_tokenID].buyerAddress.push(msg.sender); 
         emit OfferMade(msg.sender, _time , _amount);
 
     }
-    function makeOfferWETH(uint256 _amount,uint256 _tokenID,uint256 _time,address _seller) public {
-         require(nftToken.balanceOf(_seller)==_tokenID,"The Token ID doesn't exist");
+    function makeOfferWETH(uint256 _amount,uint256 _tokenID,uint256 _time) public {
         offerByBuyerWETH[_tokenID].amount.push(_amount);
         offerByBuyerWETH[_tokenID].expiry.push(_time);
         offerByBuyerWETH[_tokenID].buyerAddress.push(msg.sender);
